@@ -31,7 +31,7 @@ conda_env = conda_env
 sys.path.append(op.join(conda_env, r"Lib\site-packages"))
 os.add_dll_directory(op.join(conda_env, r'Library\bin'))
 
-from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete
+from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete, flush
 # viewport to bitmap to pil image
 def capture_viewport():
     view = sc.doc.Views.ActiveView
@@ -195,6 +195,7 @@ def show_image_dialog():
         if image_view.Image is not None:
             image_view.Image = None
         check_loading_timer.Stop()
+        flush()
     
     # Connect events
     ai_button.Click += on_ai_button_click

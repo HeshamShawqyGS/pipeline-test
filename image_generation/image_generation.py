@@ -30,8 +30,6 @@ def load_pipeline():
     pipe = StableDiffusionXLControlNetPipeline.from_pretrained(base_model_id, controlnet=controlnet, 
                                                               torch_dtype=torch.float16)
     
-    pipe.load_lora_weights(lora_path)
-    pipe.fuse_lora(lora_scale=0.125)
     
     # Configure hardware
     if torch.cuda.is_available():
@@ -90,7 +88,7 @@ def resize_image_small(image, max_size=1024):
     
     return image.resize((width, height), Image.LANCZOS)
 
-# generate a canny edge image of the rhino viewport - you can change that to any other controlnet image
+# generate a canny edge image 
 def preprocess_image(image):
     img_processor = AnylineDetector.from_pretrained("TheMistoAI/MistoLine", filename="MTEED.pth", subfolder="Anyline")
     edges_rgb = img_processor(image)
@@ -102,7 +100,6 @@ def preprocess_image(image):
 def generate_from_rhino_view(image, prompt, pipeline=None, negative_prompt="ugly, low quality", 
                              guidance_scale=5, control_strength=0.5, num_inference_steps=8, seed=None):
     
-    flush()
     pipe = pipeline if pipeline is not None else get_pipeline()
     
     small_image = resize_image_small(image)
@@ -119,5 +116,6 @@ def generate_from_rhino_view(image, prompt, pipeline=None, negative_prompt="ugly
         controlnet_conditioning_scale=control_strength,
         generator=generator
     ).images[0]
+
     flush()
     return result
