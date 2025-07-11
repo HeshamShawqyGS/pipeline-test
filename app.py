@@ -22,7 +22,7 @@ import Eto.Forms as forms
 import Eto.Drawing as drawing
 from System.Drawing import Bitmap, Imaging
 from PIL import Image, ImageOps
-
+from System import GC
 # -------------------------------------------
 # make sure to change the env environment path
 # -------------------------------------------
@@ -192,15 +192,16 @@ def show_image_dialog():
             status_label.Text = f"Error: {str(e)}"
             ai_button.Enabled = True
     
-    def on_form_closing(sender, e):
+    def on_form_closed(sender, e):
         if image_view.Image is not None:
             image_view.Image = None
         check_loading_timer.Stop()
         flush()
+        GC.Collect()
     
     # Connect events
     ai_button.Click += on_ai_button_click
-    form.Closing += on_form_closing
+    form.Closed += on_form_closed
     
     form.Show()
     
