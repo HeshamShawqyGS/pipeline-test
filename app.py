@@ -1,3 +1,4 @@
+# requirements: pillow
 
 #replace the following paths
 cache_path = "Z:\\Development Projects\\huggingface"

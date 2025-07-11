@@ -9,15 +9,17 @@ import numpy as np
 from huggingface_hub import hf_hub_download
 import gc
 
+_pipeline = None
+_loading_complete = False
+_loading_thread = None
+
+
 def flush():
     gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.synchronize()
     gc.collect()
 
-_pipeline = None
-_loading_complete = False
-_loading_thread = None
 
 # model control
 def load_pipeline():
