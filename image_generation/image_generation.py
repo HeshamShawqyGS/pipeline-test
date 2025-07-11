@@ -9,15 +9,20 @@ import numpy as np
 from huggingface_hub import hf_hub_download
 import gc
 
+_pipeline = None
+_loading_complete = False
+_loading_thread = None
+
+
 def flush():
+    global _pipeline
+    _pipeline = None
     gc.collect()
+
     torch.cuda.empty_cache()
     torch.cuda.synchronize()
     gc.collect()
 
-_pipeline = None
-_loading_complete = False
-_loading_thread = None
 
 # model control
 def load_pipeline():
@@ -34,7 +39,7 @@ def load_pipeline():
     # Configure hardware
     if torch.cuda.is_available():
         pipe = pipe.to("cuda")
-        pipe.enable_model_cpu_offload()
+        # pipe.enable_model_cpu_offload()
     
     return pipe
 
@@ -100,7 +105,7 @@ def preprocess_image(image):
 def generate_from_rhino_view(image, prompt, pipeline=None, negative_prompt="ugly, low quality", 
                              guidance_scale=5, control_strength=0.5, num_inference_steps=8, seed=None):
     
-    pipe = pipeline if pipeline is not None else get_pipeline()
+    pipe = pipeline or get_pipeline() or load_pipeline()
     
     small_image = resize_image_small(image)
     processed_image = preprocess_image(small_image)
