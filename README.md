@@ -32,3 +32,9 @@ Make sure you enable this option during the installation:
     - pip install peft
 	- One line to download all the libraries: 
     - pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126 && pip install diffusers accelerate transformers opencv-python pyOpenSSL controlnet_aux pillow mediapipe numpy timm peft
+
+- **Install the required libraries on python for Rhino:**
+  - # requirements: pillow
+
+- **Ensure Developer Mode is enabled on Windows:**
+  - https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development

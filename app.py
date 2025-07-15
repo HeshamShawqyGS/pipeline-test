@@ -1,39 +1,25 @@
+import os
+import bootstrap_torchcuda
 
 #replace the following paths
-cache_path = "Z:\\Development Projects\\huggingface"
-conda_env = r'C:\envs\generative_rhino_ai'
-
-import os, sys, threading, tempfile
-import os.path as op
-# -------------------------------------------
-# make sure to change the cache path
-# -------------------------------------------
-cache_path = cache_path
+cache_path = r"C:\cache"
 os.environ["TRANSFORMERS_CACHE"] = cache_path
 os.environ["HF_HUB_CACHE"] = cache_path
 os.environ["HUGGINGFACE_HUB_CACHE"] = cache_path 
 os.environ["HF_HOME"] = cache_path
 
-import rhinoscriptsyntax as rs
-import Rhino
+import threading, tempfile
+from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete, flush
 import scriptcontext as sc
 import Eto.Forms as forms
 import Eto.Drawing as drawing
 from System.Drawing import Bitmap, Imaging
-from PIL import Image, ImageOps
+from PIL import Image
+from System import GC
 
-# -------------------------------------------
-# make sure to change the env environment path
-# -------------------------------------------
 
-# Configure environment
-conda_env = conda_env 
-sys.path.append(op.join(conda_env, r"Lib\site-packages"))
-os.add_dll_directory(op.join(conda_env, r'Library\bin'))
-
-from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete, flush
-# viewport to bitmap to pil image
 def capture_viewport():
+    """Capture viewport as pillow image"""
     view = sc.doc.Views.ActiveView
     bitmap = view.CaptureToBitmap()
     
@@ -45,8 +31,9 @@ def capture_viewport():
     
     return pil_image
 
-# pil to bitmap to eto
+
 def pil_to_eto_image(pil_image):
+    """Convert pillow image to Eto bitmap"""
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
         temp_path = temp_file.name
     
@@ -61,12 +48,9 @@ def pil_to_eto_image(pil_image):
 
     return eto_bitmap
 
-# Initialize sticky dictionary for form reference
-# if 'negative_viewport_form' not in sc.sticky:
-#     sc.sticky['negative_viewport_form'] = None
 
-# creating the UI components
 def create_ui_controls():
+    """Create user interface"""
     # Create image view
     image_view = forms.ImageView()
     image_view.BackgroundColor = drawing.Color.FromArgb(255, 255, 255)
@@ -96,7 +80,7 @@ def create_ui_controls():
 
 
 def show_image_dialog():
-    
+    """Show user interface"""
     initialize_models()
     
     # Create form
@@ -191,19 +175,21 @@ def show_image_dialog():
             status_label.Text = f"Error: {str(e)}"
             ai_button.Enabled = True
     
-    def on_form_closing(sender, e):
+    def on_form_closed(sender, e):
         if image_view.Image is not None:
             image_view.Image = None
         check_loading_timer.Stop()
         flush()
+        GC.Collect()
     
     # Connect events
     ai_button.Click += on_ai_button_click
-    form.Closing += on_form_closing
+    form.Closed += on_form_closed
     
     form.Show()
     
     return form
+
 
 if __name__ == "__main__":
     show_image_dialog()

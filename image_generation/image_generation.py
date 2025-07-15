@@ -1,26 +1,31 @@
-import sys, os, threading, time
-import os.path as op
-
+import threading
 import torch
 from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from controlnet_aux import AnylineDetector
 from PIL import Image
 import numpy as np
-from huggingface_hub import hf_hub_download
 import gc
 
-def flush():
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.synchronize()
-    gc.collect()
 
 _pipeline = None
 _loading_complete = False
 _loading_thread = None
 
-# model control
+
+def flush():
+    """Dispose loaded models and flush caches"""
+    global _pipeline, _loading_thread
+    _pipeline = None
+    _loading_thread = None
+    gc.collect()
+
+    torch.cuda.empty_cache()
+    torch.cuda.synchronize()
+    gc.collect()
+
+
 def load_pipeline():
+    """Load models, create image generation pipeline, and return the pipeline"""
     # Model configuration
     base_model_id = "SG161222/RealVisXL_V4.0"  
     controlnet_model_id = "xinsir/controlnet-canny-sdxl-1.0"
@@ -34,39 +39,38 @@ def load_pipeline():
     # Configure hardware
     if torch.cuda.is_available():
         pipe = pipe.to("cuda")
-        pipe.enable_model_cpu_offload()
+        # pipe.enable_model_cpu_offload()
     
     return pipe
 
-# starting a daemon thread 
+
 def initialize_models():
+    """Start a daemon thread that loads pipeline"""
+    def _load_models():
+        global _pipeline, _loading_complete, _loading_error
+        _loading_complete, _loading_error = False, None
+        _pipeline = load_pipeline()
+        _loading_complete = True
+
     global _loading_thread
     if _loading_thread is None or not _loading_thread.is_alive():
         _loading_thread = threading.Thread(target=_load_models)
         _loading_thread.daemon = True
         _loading_thread.start()
 
-# handeling loading the model pipeline
-def _load_models():
 
-    global _pipeline, _loading_complete, _loading_error
-
-    _loading_complete, _loading_error = False, None
-
-    _pipeline = load_pipeline()
-
-    _loading_complete = True
-
-# calling the pipeline
 def get_pipeline():
+    """Get loaded pipeline singleton"""
     return _pipeline
 
-# check if pipeline is loaded
+
 def is_loading_complete():
+    """Check if pipeline is loaded"""
     return _loading_complete
 
-# resizing the image 
+
 def resize_image_small(image, max_size=1024):
+    """Resize image magically"""
     def make_divisible_by_8(value):
         return (value // 8) * 8
 
@@ -88,19 +92,20 @@ def resize_image_small(image, max_size=1024):
     
     return image.resize((width, height), Image.LANCZOS)
 
-# generate a canny edge image 
+
 def preprocess_image(image):
+    """Generate a canny edge image"""
     img_processor = AnylineDetector.from_pretrained("TheMistoAI/MistoLine", filename="MTEED.pth", subfolder="Anyline")
     edges_rgb = img_processor(image)
     if isinstance(edges_rgb, np.ndarray):
         edges_rgb = Image.fromarray(edges_rgb)
     return edges_rgb
 
-# image generation
+
 def generate_from_rhino_view(image, prompt, pipeline=None, negative_prompt="ugly, low quality", 
                              guidance_scale=5, control_strength=0.5, num_inference_steps=8, seed=None):
-    
-    pipe = pipeline if pipeline is not None else get_pipeline()
+    """Do magic!"""
+    pipe = pipeline or get_pipeline() or load_pipeline()
     
     small_image = resize_image_small(image)
     processed_image = preprocess_image(small_image)
