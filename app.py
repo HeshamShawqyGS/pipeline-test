@@ -1,38 +1,23 @@
-# requirements: pillow
+import os
+import bootstrap_torchcuda
 
 #replace the following paths
-cache_path = "Z:\\Development Projects\\huggingface"
-conda_env = r'C:\envs\generative_rhino_ai'
-
-import os, sys, threading, tempfile
-import os.path as op
-# -------------------------------------------
-# make sure to change the cache path
-# -------------------------------------------
-cache_path = cache_path
+cache_path = r"C:\cache"
 os.environ["TRANSFORMERS_CACHE"] = cache_path
 os.environ["HF_HUB_CACHE"] = cache_path
 os.environ["HUGGINGFACE_HUB_CACHE"] = cache_path 
 os.environ["HF_HOME"] = cache_path
 
-import rhinoscriptsyntax as rs
-import Rhino
+import threading, tempfile
+from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete, flush
 import scriptcontext as sc
 import Eto.Forms as forms
 import Eto.Drawing as drawing
 from System.Drawing import Bitmap, Imaging
-from PIL import Image, ImageOps
+from PIL import Image
 from System import GC
-# -------------------------------------------
-# make sure to change the env environment path
-# -------------------------------------------
 
-# Configure environment
-conda_env = conda_env 
-sys.path.append(op.join(conda_env, r"Lib\site-packages"))
-os.add_dll_directory(op.join(conda_env, r'Library\bin'))
 
-from image_generation.image_generation import generate_from_rhino_view, initialize_models, is_loading_complete, flush
 def capture_viewport():
     """Capture viewport as pillow image"""
     view = sc.doc.Views.ActiveView
