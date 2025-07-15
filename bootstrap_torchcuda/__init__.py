@@ -1,5 +1,18 @@
+"""Torch with CUDA support bootstrapper.
+
+Reaches into Rhino 3d scripting API to use pip directly to install
+torch with cuda support from a custom index url.
+Installs all packages into site-packages environment since other
+envs under site-env are not suited for complex libs like torch.
+Uses scripting progress bar reporter to report install progress.
+
+Reach out for questions to Ehsan Iran-Nejad (ehsan@mcneel.com) or
+https://discourse.mcneel.com/u/eirannejad
+"""
 import threading
 from typing import List
+
+# ref necessary rhinocode api
 import clr
 clr.AddReference("Rhino.Runtime.Code")
 clr.AddReference("RhinoCodePlatform.Rhino3D")
@@ -9,13 +22,15 @@ from RhinoCodePlatform.Rhino3D.Languages import RhinoProgressBarRestoreReporter
 from Rhino import RhinoApp
 
 
+# global flag to avoid repeating work
+# every time this module is loaded in the same process.
 __bootstrapped__ = False
 
 
 def run_pip(py3, reporter, args, results):
-    """PIP installs using given arguments and sets global 'result'"""
+    """PIP installs using given arguments and adds result to the input results list"""
     result = py3.Environs.Shared.PIP(py3.Runtime, args, reporter, lambda _: None)
-    reporter.Report(ProgressReport.Complete)
+    reporter.Report(ProgressReport.Complete)    # completes progress and clears Rhino's progressbar
     results.append(result)
 
 
